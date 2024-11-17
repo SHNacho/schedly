@@ -1,0 +1,6 @@
+psycopg
+sqlalchemy
+pyyaml
+langchain
+openai
+

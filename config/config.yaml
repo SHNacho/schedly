@@ -1,0 +1,12 @@
+# config/config.yaml
+# modify as needed
+database:
+  host: "localhost"
+  user: "admin"
+  password: "admin"
+  database: "schedly"
+  port: 5432  # Default PostgreSQL port
+
+llm:
+  api_key: "your_langchain_api_key"
+
