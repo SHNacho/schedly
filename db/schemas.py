@@ -2,6 +2,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import Optional, List
 from datetime import datetime, time
 
+from db.enum import Weekday
+
 # Pydantic models for data validation
 
 # Customer Pydantic model
@@ -64,7 +66,7 @@ class WorkScheduleRead(WorkScheduleCreate):
 
     def __str__(self):
         result = (
-            f"{self.day_of_week}: from {time.strftime(self.start_time, '%H:%M:%S')} to {time.strftime(self.end_time, '%H:%M:%S')}"
+            f"{Weekday(self.day_of_week).name}: from {time.strftime(self.start_time, '%H:%M:%S')} to {time.strftime(self.end_time, '%H:%M:%S')}"
         )
         return result
 
