@@ -26,6 +26,21 @@ class StylistRead(StylistCreate):
     work_schedules: Optional[List["WorkScheduleRead"]] = None
     appointments: Optional[List["AppointmentRead"]] = None
 
+    def __str__(self):
+        result = (
+            f"Name: {self.name}\n"
+            f"Specialty: {self.specialty}\n"
+        )
+        if self.work_schedules:
+            result += "Work Schedules:\n"
+            for ws in self.work_schedules:
+                result += f"  - {str(ws)}\n"
+        if self.appointments:
+            result += "Appointments:\n"
+            for a in self.appointments:
+                result += f"  - {str(a)}\n"
+        return result
+
 # Service Pydantic model
 class ServiceCreate(BaseModel):
     name: str
@@ -47,6 +62,12 @@ class WorkScheduleRead(WorkScheduleCreate):
     model_config = ConfigDict(from_attributes = True)
     id: int
 
+    def __str__(self):
+        result = (
+            f"{self.day_of_week}: from {time.strftime(self.start_time, '%H:%M:%S')} to {time.strftime(self.end_time, '%H:%M:%S')}"
+        )
+        return result
+
 # Appointment Pydantic model
 class AppointmentCreate(BaseModel):
     appointment_time: datetime
@@ -57,4 +78,8 @@ class AppointmentCreate(BaseModel):
 class AppointmentRead(AppointmentCreate):
     model_config = ConfigDict(from_attributes = True)
     id: int
+
+    def __str__(self):
+        result = f"At {datetime.strftime(self.appointment_time, '%d-%m-%Y %H:%M:%S')}"
+        return result
 
