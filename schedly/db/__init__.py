@@ -5,8 +5,10 @@ from sqlalchemy.orm import sessionmaker
 # Load database configuration
 config = load_config()
 DATABASE_URL = (
-    f"postgresql+psycopg://{config['database']['user']}:{config['database']['password']}@"
-    f"{config['database']['host']}:{config['database']['port']}/{config['database']['database']}"
+    f"postgresql+psycopg://{config['database']['user']}:"
+    f"{config['database']['password']}@"
+    f"{config['database']['host']}:{config['database']['port']}/"
+    f"{config['database']['database']}"
 )
 
 # Create a single engine instance

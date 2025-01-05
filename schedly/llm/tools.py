@@ -17,7 +17,6 @@ from llm.utils import calculate_available_intervals
 from llm.utils import calculate_unavailable_intervals
 from llm.utils import time_interval_into_slots
 from sqlalchemy import Date
-from sqlalchemy import func
 
 
 def _stylist_available_hours(

@@ -2,10 +2,6 @@ from datetime import date
 from datetime import datetime
 from datetime import timedelta
 
-from db import Session
-from db.crud import get_appointment
-from db.crud import get_service
-
 
 def print_stream(stream):
     """
