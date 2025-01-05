@@ -1,18 +1,21 @@
 from typing import List
-from db.models import (
-    Customer,
-    Stylist,
-    WorkSchedule,
-    Appointment,
-    Service
-)
-from db.schemas import(
-    CustomerCreate, CustomerRead,
-    StylistCreate, StylistRead,
-    WorkScheduleCreate, WorkScheduleRead,
-    AppointmentCreate, AppointmentRead,
-    ServiceCreate, ServiceRead
-)
+
+from db.models import Appointment
+from db.models import Customer
+from db.models import Service
+from db.models import Stylist
+from db.models import WorkSchedule
+from db.schemas import AppointmentCreate
+from db.schemas import AppointmentRead
+from db.schemas import CustomerCreate
+from db.schemas import CustomerRead
+from db.schemas import ServiceCreate
+from db.schemas import ServiceRead
+from db.schemas import StylistCreate
+from db.schemas import StylistRead
+from db.schemas import WorkScheduleCreate
+from db.schemas import WorkScheduleRead
+
 
 # Customer CRUD
 def create_customer(db_session, customer_data: CustomerCreate):
@@ -22,21 +25,14 @@ def create_customer(db_session, customer_data: CustomerCreate):
     db_session.refresh(customer)
     return CustomerRead.model_validate(customer)
 
+
 def get_customer(db_session, customer_id: int):
-    customer = (
-        db_session.query(Customer)
-        .outerjoin(Appointment)
-        .filter(Customer.id == customer_id)
-        .first()
-    )
+    customer = db_session.query(Customer).filter(Customer.id == customer_id).first()
     return CustomerRead.model_validate(customer) if customer else None
 
+
 def update_customer(db_session, customer_id: int, customer_data: CustomerCreate):
-    customer = (
-        db_session.query(Customer)
-        .filter(Customer.id == customer_id)
-        .first()
-    )
+    customer = db_session.query(Customer).filter(Customer.id == customer_id).first()
     if customer:
         for key, value in customer_data.model_dump(exclude_unset=True).items():
             setattr(customer, key, value)
@@ -44,16 +40,14 @@ def update_customer(db_session, customer_id: int, customer_data: CustomerCreate)
         db_session.refresh(customer)
     return CustomerRead.model_validate(customer) if customer else None
 
+
 def delete_customer(db_session, customer_id: int):
-    customer = (
-        db_session.query(Customer)
-        .filter(Customer.id == customer_id)
-        .first()
-    )
+    customer = db_session.query(Customer).filter(Customer.id == customer_id).first()
     if customer:
         db_session.delete(customer)
         db_session.commit()
     return customer_id if customer else None
+
 
 # Stylist CRUD
 def create_stylist(db_session, stylist_data: StylistCreate):
@@ -63,13 +57,11 @@ def create_stylist(db_session, stylist_data: StylistCreate):
     db_session.refresh(stylist)
     return StylistRead.model_validate(stylist)
 
+
 def get_stylist(db_session, stylist_id: int):
-    stylist = (
-        db_session.query(Stylist)
-        .filter(Stylist.id == stylist_id)
-        .first()
-    )
+    stylist = db_session.query(Stylist).filter(Stylist.id == stylist_id).first()
     return StylistRead.model_validate(stylist) if stylist else None
+
 
 def update_stylist(db_session, stylist_id: int, stylist_data: StylistCreate):
     stylist = db_session.query(Stylist).filter(Stylist.id == stylist_id).first()
@@ -80,12 +72,14 @@ def update_stylist(db_session, stylist_id: int, stylist_data: StylistCreate):
         db_session.refresh(stylist)
     return StylistRead.model_validate(stylist) if stylist else None
 
+
 def delete_stylist(db_session, stylist_id: int):
     stylist = db_session.query(Stylist).filter(Stylist.id == stylist_id).first()
     if stylist:
         db_session.delete(stylist)
         db_session.commit()
     return stylist_id if stylist else None
+
 
 # Service CRUD
 def create_service(db_session, service_data: ServiceCreate):
@@ -95,9 +89,11 @@ def create_service(db_session, service_data: ServiceCreate):
     db_session.refresh(service)
     return ServiceRead.model_validate(service)
 
+
 def get_service(db_session, service_id: int):
     service = db_session.query(Service).filter(Service.id == service_id).first()
     return ServiceRead.model_validate(service) if service else None
+
 
 def update_service(db_session, service_id: int, service_data: ServiceCreate):
     service = db_session.query(Service).filter(Service.id == service_id).first()
@@ -108,12 +104,14 @@ def update_service(db_session, service_id: int, service_data: ServiceCreate):
         db_session.refresh(service)
     return ServiceRead.model_validate(service) if service else None
 
+
 def delete_service(db_session, service_id: int):
     service = db_session.query(Service).filter(Service.id == service_id).first()
     if service:
         db_session.delete(service)
         db_session.commit()
     return service_id if service else None
+
 
 # WorkSchedule CRUD
 def create_work_schedule(db_session, schedule_data: WorkScheduleCreate):
@@ -123,23 +121,21 @@ def create_work_schedule(db_session, schedule_data: WorkScheduleCreate):
     db_session.refresh(schedule)
     return WorkScheduleRead.model_validate(schedule)
 
+
 def get_work_schedule(db_session, schedule_id: int):
     schedule = (
-        db_session.query(WorkSchedule)
-        .filter(WorkSchedule.id == schedule_id)
-        .first()
+        db_session.query(WorkSchedule).filter(WorkSchedule.id == schedule_id).first()
     )
     return WorkScheduleRead.model_validate(schedule) if schedule else None
 
+
 def update_work_schedule(
-        db_session, 
-        schedule_id: int, 
-        schedule_data: WorkScheduleCreate
+    db_session,
+    schedule_id: int,
+    schedule_data: WorkScheduleCreate,
 ):
     schedule = (
-        db_session.query(WorkSchedule)
-        .filter(WorkSchedule.id == schedule_id)
-        .first()
+        db_session.query(WorkSchedule).filter(WorkSchedule.id == schedule_id).first()
     )
     if schedule:
         for key, value in schedule_data.model_dump(exclude_unset=True).items():
@@ -148,16 +144,16 @@ def update_work_schedule(
         db_session.refresh(schedule)
     return WorkScheduleRead.model_validate(schedule) if schedule else None
 
+
 def delete_work_schedule(db_session, schedule_id: int):
     schedule = (
-        db_session.query(WorkSchedule)
-        .filter(WorkSchedule.id == schedule_id)
-        .first()
+        db_session.query(WorkSchedule).filter(WorkSchedule.id == schedule_id).first()
     )
     if schedule:
         db_session.delete(schedule)
         db_session.commit()
     return schedule_id if schedule else None
+
 
 # Appointment CRUD
 def create_appointment(db_session, appointment_data: AppointmentCreate):
@@ -167,23 +163,21 @@ def create_appointment(db_session, appointment_data: AppointmentCreate):
     db_session.refresh(appointment)
     return AppointmentRead.model_validate(appointment)
 
+
 def get_appointment(db_session, appointment_id: int):
     appointment = (
-        db_session.query(Appointment)
-        .filter(Appointment.id == appointment_id)
-        .first()
+        db_session.query(Appointment).filter(Appointment.id == appointment_id).first()
     )
     return AppointmentRead.model_validate(appointment) if appointment else None
 
+
 def update_appointment(
-        db_session, 
-        appointment_id: int, 
-        appointment_data: AppointmentCreate
+    db_session,
+    appointment_id: int,
+    appointment_data: AppointmentCreate,
 ):
     appointment = (
-        db_session.query(Appointment)
-        .filter(Appointment.id == appointment_id)
-        .first()
+        db_session.query(Appointment).filter(Appointment.id == appointment_id).first()
     )
     if appointment:
         for key, value in appointment_data.model_dump(exclude_unset=True).items():
@@ -192,35 +186,50 @@ def update_appointment(
         db_session.refresh(appointment)
     return AppointmentRead.model_validate(appointment) if appointment else None
 
+
 def delete_appointment(db_session, appointment_id: int):
     appointment = (
-        db_session.query(Appointment)
-        .filter(Appointment.id == appointment_id)
-        .first()
+        db_session.query(Appointment).filter(Appointment.id == appointment_id).first()
     )
     if appointment:
         db_session.delete(appointment)
         db_session.commit()
     return appointment_id if appointment else None
 
+
 # Stylist: Get all stylists with their work schedules and appointments
 def get_all_stylists(db_session) -> List[StylistRead]:
-    stylists = (
-        db_session.query(Stylist)
-        .outerjoin(WorkSchedule)
-        .outerjoin(Appointment)
-        .all()
-    )
+    stylists = db_session.query(Stylist).all()
     return [StylistRead.model_validate(stylist) for stylist in stylists]
+
 
 def get_all_services(db_session) -> List[ServiceRead]:
     services = db_session.query(Service).all()
-    return [Service.model_validate(service) for service in services]
+    return [ServiceRead.model_validate(service) for service in services]
+
 
 def get_all_customers(db_session) -> List[CustomerRead]:
-    customers = (
-        db_session.query(Customer)
-        .ourterjoin(Appointment)
-        .all
-    )
+    customers = db_session.query(Customer).all()
     return [CustomerRead.model_validate(customer) for customer in customers]
+
+
+def get_all_appointments(db_session, filters: list = None):  # -> List[AppointmentRead]:
+    query = db_session.query(Appointment)
+    if filters:
+        query = query.filter(*filters)
+    appointments = query.all()
+    return [AppointmentRead.model_validate(appointment) for appointment in appointments]
+
+
+def get_all_schedules(db_session, filters: list = None) -> List[WorkScheduleRead]:
+    query = db_session.query(WorkSchedule)
+    if filters:
+        query = query.filter(*filters)
+    schedules = query.all()
+    return [WorkScheduleRead.model_validate(schedule) for schedule in schedules]
+
+
+if __name__ == "__main__":
+    from db import Session
+
+    print(get_all_stylists(Session()))

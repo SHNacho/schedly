@@ -1,7 +1,0 @@
-psycopg
-sqlalchemy
-pyyaml
-langchain
-langchain-openai
-openai
-
