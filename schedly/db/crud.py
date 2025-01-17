@@ -1,4 +1,5 @@
 from typing import List
+from typing import Optional
 
 from db.models import Appointment
 from db.models import Customer
@@ -175,10 +176,12 @@ def update_appointment(
     db_session,
     appointment_id: int,
     appointment_data: AppointmentCreate,
+    filters: Optional[list] = None,
 ):
-    appointment = (
-        db_session.query(Appointment).filter(Appointment.id == appointment_id).first()
-    )
+    query_filters = [Appointment.id == appointment_id]
+    query = db_session.query(Appointment).filter(Appointment.id == appointment_id)
+    query_filters = filters.extend(filters) if filters else query_filters
+    appointment = query.filter(*query_filters).first()
     if appointment:
         for key, value in appointment_data.model_dump(exclude_unset=True).items():
             setattr(appointment, key, value)
@@ -187,10 +190,15 @@ def update_appointment(
     return AppointmentRead.model_validate(appointment) if appointment else None
 
 
-def delete_appointment(db_session, appointment_id: int):
-    appointment = (
-        db_session.query(Appointment).filter(Appointment.id == appointment_id).first()
-    )
+def delete_appointment(
+    db_session,
+    appointment_id: int,
+    filters: Optional[list] = None,
+):
+    query_filters = [Appointment.id == appointment_id]
+    query = db_session.query(Appointment)
+    query_filters = query_filters.extend(filters) if filters else query_filters
+    appointment = query.filter(*query_filters).first()
     if appointment:
         db_session.delete(appointment)
         db_session.commit()

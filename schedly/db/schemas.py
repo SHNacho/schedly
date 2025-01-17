@@ -8,9 +8,8 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import EmailStr
 
+
 # Pydantic models for data validation
-
-
 # Customer Pydantic model
 class CustomerCreate(BaseModel):
     name: str
@@ -91,5 +90,5 @@ class AppointmentRead(AppointmentCreate):
     service: Optional[ServiceRead] = None
 
     def __str__(self):
-        result = f"At {datetime.strftime(self.appointment_time, '%d-%m-%Y %H:%M:%S')}"
+        result = f"ID: {self.id}; Stylist ID: {self.stylist_id}; Service ID: {self.service}; Date and Time: {datetime.strftime(self.appointment_time, '%A, %d-%m-%Y %H:%M:%S')}"
         return result

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 
 from db import Session
 from db.crud import create_appointment
@@ -12,7 +13,14 @@ from db.crud import update_appointment
 from db.models import Appointment
 from db.models import WorkSchedule
 from db.schemas import AppointmentCreate
+from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
+from langgraph.graph.state import BaseStore
+from langgraph.prebuilt import InjectedState
+from langgraph.prebuilt import InjectedStore
+from langgraph.prebuilt import ToolNode
+from llm.state import AgentState
 from llm.utils import calculate_available_intervals
 from llm.utils import calculate_unavailable_intervals
 from llm.utils import time_interval_into_slots
@@ -152,7 +160,7 @@ def tool_stylist_available_hours(
 
 @tool
 def tool_save_appointment(
-    customer_id: int,
+    customer_id: Annotated[int, InjectedState("customer_id")],
     stylist_id: int,
     service_id: int,
     appointment_datetime: str,
@@ -178,19 +186,18 @@ def tool_save_appointment(
 
 
 @tool
-def tool_list_customer_appointments(customer_id: int):
+def tool_list_customer_appointments(
+    customer_id: Annotated[int, InjectedState("customer_id")],
+):
     """
     Call to list all appointments for a customer.
-
-    Params:
-        customer_id (int): Identifier of the customer
     """
     with Session() as session:
         appointments = get_all_appointments(
             session,
             filters=[Appointment.customer_id == customer_id],
         )
-        str_appointments = "These are the appointments:\n"
+        str_appointments = "These are your appointments:\n"
         for appointment in appointments:
             str_appointments += f"- {str(appointment)}\n"
     return str_appointments
@@ -200,24 +207,31 @@ def tool_list_customer_appointments(customer_id: int):
 def tool_update_appointment(
     appointment_id: int,
     appointment_datetime: str,
+    customer_id: Annotated[int, InjectedState("customer_id")],
 ):
     """
-    Call to update an appointment in the database.
+    Use to update or change an exisisting appointment.
 
     Params:
         appointment_id (int): Identifier of the appointment
-        appointment_datetime (str): Appointment date and time in the format "%Y-%m-%d %H:%M:%S"
+        appointment_datetime (str): New appointment date and time in the format "%Y-%m-%d %H:%M:%S"
     """
     with Session() as session:
         appointment = AppointmentCreate(
             appointment_time=appointment_datetime,
         )
-        update_appointment(session, appointment_id, appointment)
-    return "Appointment updated successfully."
+        constraints = [Appointment.customer_id == customer_id]
+        if update_appointment(session, appointment_id, appointment, constraints):
+            return "Appointment updated successfully."
+        else:
+            return "You are not authorized to update this appointment."
 
 
 @tool
-def tool_delete_appointment(appointment_id: int):
+def tool_delete_appointment(
+    appointment_id: int,
+    customer_id: Annotated[int, InjectedState("customer_id")],
+):
     """
     Call to delete an appointment from the database.
 
@@ -225,10 +239,12 @@ def tool_delete_appointment(appointment_id: int):
         appointment_id (int): Identifier of the appointment
     """
     with Session() as session:
-        delete_appointment(session, appointment_id)
-    return "Appointment deleted successfully."
+        constraints = [Appointment.customer_id == customer_id]
+        if delete_appointment(session, appointment_id, constraints):
+            return "Appointment deleted successfully."
+        else:
+            return "You are not authorized to delete this appointment."
 
 
 if __name__ == "__main__":
-    available_slots = _stylist_available_hours("2025-10-11", 3, 3)
-    print(available_slots)
+    pass

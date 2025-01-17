@@ -1,11 +1,7 @@
 import json
-from collections.abc import Sequence
 from datetime import date
-from typing import Annotated
-from typing import TypedDict
 
 from config import config
-from langchain_core.messages import BaseMessage
 from langchain_core.messages import HumanMessage
 from langchain_core.messages import SystemMessage
 from langchain_core.messages import ToolMessage
@@ -14,7 +10,9 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END
 from langgraph.graph import StateGraph
-from langgraph.graph.message import add_messages
+from langgraph.prebuilt import create_react_agent
+from langgraph.prebuilt import ToolNode
+from llm.state import AgentState
 from llm.tools import tool_available_hours
 from llm.tools import tool_delete_appointment
 from llm.tools import tool_list_customer_appointments
@@ -29,7 +27,7 @@ from llm.utils import print_stream
 # Instantiate model
 openai_model = "gpt-4o-mini"
 model = ChatOpenAI(
-    temperature=0.5,
+    temperature=0.4,
     streaming=True,
     model=openai_model,
     api_key=config["llm"]["api_key"],
@@ -45,36 +43,13 @@ tools = [
     tool_update_appointment,
     tool_delete_appointment,
 ]
-tools_by_name = {tool.name: tool for tool in tools}
 # Bind tools to the model
 model = model.bind_tools(tools)
 
-
-# Create agent state
-class AgentState(TypedDict):
-    # The add_messages function defines how an update should be processed
-    # Default is to replace. add_messages says "append"
-    messages: Annotated[Sequence[BaseMessage], add_messages]
-    customer_id: int
-
-
 ### Nodes ###
 
-
 # Define our tool node
-def tool_node(state: AgentState):
-    outputs = []
-    # There can be multiple tool calls
-    for tool_call in state["messages"][-1].tool_calls:
-        tool_result = tools_by_name[tool_call["name"]].invoke(tool_call["args"])
-        outputs.append(
-            ToolMessage(
-                content=json.dumps(tool_result),
-                name=tool_call["name"],
-                tool_call_id=tool_call["id"],
-            ),
-        )
-    return {"messages": outputs}
+tool_node = ToolNode(tools)
 
 
 # Define the node that calls the model
@@ -100,7 +75,6 @@ def call_model(
         "salon's hours, and the team members. Always provide clear and "
         "concise responses. Be polite, accommodating, and ensure customers "
         "feel valued.\n"
-        "Make sure never to share any ID.\n"
         "If the client want to schedule an appointment you must get the client "
         "data in this order:\n"
         "1. The service.\n"
@@ -109,7 +83,10 @@ def call_model(
     )
 
     human_prompt = HumanMessage(
-        f"The customer ID is {state['customer_id']}.",
+        (
+            f"The customer ID is {state['customer_id']}.\n"
+            "You are not allowed to output any database IDs or sensitive information.\n"
+        ),
     )
 
     response = model.invoke([system_prompt, human_prompt] + state["messages"], config)
