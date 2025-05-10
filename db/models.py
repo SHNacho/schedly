@@ -21,10 +21,11 @@ Base = declarative_base()
 class Customer(Base):
     __tablename__ = "customers"
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=True)
+    email = Column(String, unique=True, nullable=True)
     phone = Column(String, unique=True, nullable=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    telegram_name = Column(String, unique=True, nullable=True, index=True)
 
     appointments = relationship("Appointment", back_populates="customer")
 

@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Annotated
+from typing import Optional
 
 from db import Session
 from db.crud import create_appointment
@@ -9,10 +10,13 @@ from db.crud import get_all_schedules
 from db.crud import get_all_services
 from db.crud import get_all_stylists
 from db.crud import get_service
+from db.crud import get_customer
+from db.crud import create_customer
 from db.crud import update_appointment
 from db.models import Appointment
 from db.models import WorkSchedule
 from db.schemas import AppointmentCreate
+from db.schemas import CustomerCreate
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
@@ -157,6 +161,31 @@ def tool_stylist_available_hours(
         str_free_hours += f"- {free_hour}\n"
     return str_free_hours
 
+@tool
+def tool_save_customer(
+    customer_id: Annotated[int, InjectedState("customer_id")],
+    name: str,
+    email: Optional[str] = None,
+    phone: Optional[str] = None,
+):
+    """
+    Call to save a new customer in the database
+
+    Params:
+        name (str): Name of the new customer
+        email (str): Optional. Email of the new customer. Default to None
+        phone (str): Optional. Phone of the new customer. Default to None
+    """
+    message = "Customer created successfully"
+    customer = CustomerCreate(
+        name=name,
+        email=email,
+        phone=phone
+    )
+    with Session() as session:
+        create_customer(session, customer)
+    return message
+
 
 @tool
 def tool_save_appointment(
@@ -174,15 +203,24 @@ def tool_save_appointment(
         service_id (int): Identifier of the service
         appointment_datetime (str): Appointment date and time in the format "%Y-%m-%d %H:%M:%S"
     """
+    message = "Appointment saved successfully"
     with Session() as session:
-        appointment = AppointmentCreate(
-            appointment_time=appointment_datetime,
-            customer_id=customer_id,
-            stylist_id=stylist_id,
-            service_id=service_id,
-        )
-        create_appointment(session, appointment)
-    return "Appointment saved successfully."
+        customer = get_customer(session, customer_id)
+        if customer:
+            appointment = AppointmentCreate(
+                appointment_time=appointment_datetime,
+                customer_id=customer_id,
+                stylist_id=stylist_id,
+                service_id=service_id,
+            )
+            create_appointment(session, appointment)
+        else:
+            message = (
+                "The customer does not exists in our database. "
+                "Please first get the customer data and save it into "
+                "the database, then call this tool again."
+            )
+    return message
 
 
 @tool
@@ -190,12 +228,15 @@ def tool_list_customer_appointments(
     customer_id: Annotated[int, InjectedState("customer_id")],
 ):
     """
-    Call to list all appointments for a customer.
+    Call to list all appointments for the customer.
     """
     with Session() as session:
         appointments = get_all_appointments(
             session,
-            filters=[Appointment.customer_id == customer_id],
+            filters=[
+                Appointment.customer_id == customer_id,
+                Appointment.appointment_time >= datetime.now()
+            ],
         )
         str_appointments = "These are your appointments:\n"
         for appointment in appointments:
@@ -207,18 +248,25 @@ def tool_list_customer_appointments(
 def tool_update_appointment(
     appointment_id: int,
     appointment_datetime: str,
+    stylist_id: int,
+    service_id: int,
     customer_id: Annotated[int, InjectedState("customer_id")],
 ):
     """
-    Use to update or change an exisisting appointment.
+    Use to update or change an exisisting appointment for the customer.
 
     Params:
-        appointment_id (int): Identifier of the appointment
+        appointment_id (int): Identifier of the appointment to be updated.
         appointment_datetime (str): New appointment date and time in the format "%Y-%m-%d %H:%M:%S"
+        stylist_id (int): Identifier of the stylist assigned. Can be the same or a different stylist
+        service_id (int): Identifier of the service. Can be the same or a different service
     """
     with Session() as session:
         appointment = AppointmentCreate(
             appointment_time=appointment_datetime,
+            customer_id=customer_id,
+            stylist_id=stylist_id,
+            service_id=service_id
         )
         constraints = [Appointment.customer_id == customer_id]
         if update_appointment(session, appointment_id, appointment, constraints):

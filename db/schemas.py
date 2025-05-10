@@ -12,9 +12,10 @@ from pydantic import EmailStr
 # Pydantic models for data validation
 # Customer Pydantic model
 class CustomerCreate(BaseModel):
-    name: str
-    email: EmailStr
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
     phone: Optional[str] = None
+    telegram_name: Optional[str] = None
 
 
 class CustomerRead(CustomerCreate):

@@ -21,27 +21,29 @@ from llm.tools import tool_list_stylists
 from llm.tools import tool_save_appointment
 from llm.tools import tool_stylist_available_hours
 from llm.tools import tool_update_appointment
+from llm.tools import tool_save_customer
 from llm.utils import print_stream
 
 
 # Instantiate model
 openai_model = "gpt-4o-mini"
 model = ChatOpenAI(
-    temperature=0.4,
+    temperature=0.1,
     streaming=True,
     model=openai_model,
-    api_key=config["llm"]["api_key"],
+    api_key=config["llm"]["openai_api_key"],
 )
 # Instantiate tools
 tools = [
     tool_available_hours,
-    tool_save_appointment,
+    tool_delete_appointment,
     tool_list_services,
     tool_list_stylists,
-    tool_stylist_available_hours,
     tool_list_customer_appointments,
+    tool_save_appointment,
+    tool_save_customer,
+    #tool_stylist_available_hours,
     tool_update_appointment,
-    tool_delete_appointment,
 ]
 # Bind tools to the model
 model = model.bind_tools(tools)
@@ -85,7 +87,7 @@ def call_model(
     human_prompt = HumanMessage(
         (
             f"The customer ID is {state['customer_id']}.\n"
-            "You are not allowed to output any database IDs or sensitive information.\n"
+            "You are not allowed to output any database IDs.\n"
         ),
     )
 

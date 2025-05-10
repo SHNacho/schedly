@@ -36,9 +36,6 @@ def create_tables():
 def random_time():
     return time(hour=random.randint(9, 17), minute=random.choice([0, 30]))
 
-
-services_names = ["nails", "hair cut", "hair dye"]
-
 schedules = {
     "morning": {
         "start": [
@@ -82,6 +79,7 @@ def populate_fake_db(session):
     ]
     session.add_all(customers)
     session.flush()  # Flush to get customer IDs
+    print("Customer table populated")
 
     # Create fake stylists
     stylists = [
@@ -93,25 +91,39 @@ def populate_fake_db(session):
     ]
     session.add_all(stylists)
     session.flush()  # Flush to get stylist IDs
+    print("Stylists table populated")
 
     # Create fake services
     services = [
         Service(
-            name=service_name,
-            price=round(random.uniform(10, 30), 2),
-            duration_minutes=random.choice([30, 45, 60, 90]),
+            name="nails",
+            price=15,
+            duration_minutes=30,
+            created_at=faker.date_time_this_year(),
+        ),
+        Service(
+            name="hair cut",
+            price=13.50,
+            duration_minutes=30,
+            created_at=faker.date_time_this_year(),
+        ),
+        Service(
+            name="hair dye",
+            price=35,
+            duration_minutes=60,
             created_at=faker.date_time_this_year(),
         )
-        for service_name in services_names
     ]
     session.add_all(services)
     session.flush()  # Flush to get service IDs
+    print("Services table populated")
 
     # Associate stylists with services
     for stylist in stylists:
         services_for_stylist = random.sample(services, random.randint(1, len(services)))
         for service in services_for_stylist:
             session.add(StylistServices(stylist_id=stylist.id, service_id=service.id))
+    print("StylystServices table populated")
 
     # Create work schedules for stylists
     for stylist in stylists:
@@ -141,6 +153,7 @@ def populate_fake_db(session):
                     )
 
     session.flush()  # Flush to get all IDs
+    print("WorkSchedule table populated")
 
     # Create fake appointments
     for _ in range(20):
@@ -175,6 +188,7 @@ def populate_fake_db(session):
                 created_at=faker.date_time_this_year(),
             ),
         )
+    print("Appointments table populated")
 
     # Commit all changes
     session.commit()
@@ -182,7 +196,7 @@ def populate_fake_db(session):
 
 
 if __name__ == "__main__":
-    drop_tables()
-    create_tables()
+    #drop_tables()
+    #create_tables()
     session = Session()
     populate_fake_db(session)
