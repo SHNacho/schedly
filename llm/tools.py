@@ -2,21 +2,6 @@ from datetime import datetime
 from typing import Annotated
 from typing import Optional
 
-from db import Session
-from db.crud import create_appointment
-from db.crud import delete_appointment
-from db.crud import get_all_appointments
-from db.crud import get_all_schedules
-from db.crud import get_all_services
-from db.crud import get_all_stylists
-from db.crud import get_service
-from db.crud import get_customer
-from db.crud import create_customer
-from db.crud import update_appointment
-from db.models import Appointment
-from db.models import WorkSchedule
-from db.schemas import AppointmentCreate
-from db.schemas import CustomerCreate
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
@@ -24,11 +9,27 @@ from langgraph.graph.state import BaseStore
 from langgraph.prebuilt import InjectedState
 from langgraph.prebuilt import InjectedStore
 from langgraph.prebuilt import ToolNode
+from sqlalchemy import Date
+
+from db import Session
+from db.crud import create_appointment
+from db.crud import create_customer
+from db.crud import delete_appointment
+from db.crud import get_all_appointments
+from db.crud import get_all_schedules
+from db.crud import get_all_services
+from db.crud import get_all_stylists
+from db.crud import get_customer
+from db.crud import get_service
+from db.crud import update_appointment
+from db.models import Appointment
+from db.models import WorkSchedule
+from db.schemas import AppointmentCreate
+from db.schemas import CustomerCreate
 from llm.state import AgentState
 from llm.utils import calculate_available_intervals
 from llm.utils import calculate_unavailable_intervals
 from llm.utils import time_interval_into_slots
-from sqlalchemy import Date
 
 
 def _stylist_available_hours(
@@ -161,6 +162,7 @@ def tool_stylist_available_hours(
         str_free_hours += f"- {free_hour}\n"
     return str_free_hours
 
+
 @tool
 def tool_save_customer(
     customer_id: Annotated[int, InjectedState("customer_id")],
@@ -180,7 +182,7 @@ def tool_save_customer(
     customer = CustomerCreate(
         name=name,
         email=email,
-        phone=phone
+        phone=phone,
     )
     with Session() as session:
         create_customer(session, customer)
@@ -235,7 +237,7 @@ def tool_list_customer_appointments(
             session,
             filters=[
                 Appointment.customer_id == customer_id,
-                Appointment.appointment_time >= datetime.now()
+                Appointment.appointment_time >= datetime.now(),
             ],
         )
         str_appointments = "These are your appointments:\n"
@@ -266,7 +268,7 @@ def tool_update_appointment(
             appointment_time=appointment_datetime,
             customer_id=customer_id,
             stylist_id=stylist_id,
-            service_id=service_id
+            service_id=service_id,
         )
         constraints = [Appointment.customer_id == customer_id]
         if update_appointment(session, appointment_id, appointment, constraints):

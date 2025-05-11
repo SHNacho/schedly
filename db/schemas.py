@@ -3,10 +3,11 @@ from datetime import time
 from typing import List
 from typing import Optional
 
-from db.enum import Weekday
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import EmailStr
+
+from db.enum import Weekday
 
 
 # Pydantic models for data validation

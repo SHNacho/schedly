@@ -1,7 +1,6 @@
 import json
 from datetime import date
 
-from config import config
 from langchain_core.messages import HumanMessage
 from langchain_core.messages import SystemMessage
 from langchain_core.messages import ToolMessage
@@ -12,6 +11,8 @@ from langgraph.graph import END
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph.prebuilt import ToolNode
+
+from config import config
 from llm.state import AgentState
 from llm.tools import tool_available_hours
 from llm.tools import tool_delete_appointment
@@ -19,9 +20,9 @@ from llm.tools import tool_list_customer_appointments
 from llm.tools import tool_list_services
 from llm.tools import tool_list_stylists
 from llm.tools import tool_save_appointment
+from llm.tools import tool_save_customer
 from llm.tools import tool_stylist_available_hours
 from llm.tools import tool_update_appointment
-from llm.tools import tool_save_customer
 from llm.utils import print_stream
 
 
@@ -42,7 +43,7 @@ tools = [
     tool_list_customer_appointments,
     tool_save_appointment,
     tool_save_customer,
-    #tool_stylist_available_hours,
+    # tool_stylist_available_hours,
     tool_update_appointment,
 ]
 # Bind tools to the model

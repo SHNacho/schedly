@@ -1,6 +1,7 @@
-from config import load_config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from config import load_config
 
 # Load database configuration
 config = load_config()

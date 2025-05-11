@@ -2,6 +2,8 @@ import random
 from datetime import datetime
 from datetime import time
 
+from faker import Faker
+
 from db import engine
 from db import Session
 from db.models import Appointment
@@ -11,7 +13,6 @@ from db.models import Service
 from db.models import Stylist
 from db.models import StylistServices
 from db.models import WorkSchedule
-from faker import Faker
 
 
 def random_time_between(start_time, end_time):
@@ -35,6 +36,7 @@ def create_tables():
 # Helper function to generate random times
 def random_time():
     return time(hour=random.randint(9, 17), minute=random.choice([0, 30]))
+
 
 schedules = {
     "morning": {
@@ -112,7 +114,7 @@ def populate_fake_db(session):
             price=35,
             duration_minutes=60,
             created_at=faker.date_time_this_year(),
-        )
+        ),
     ]
     session.add_all(services)
     session.flush()  # Flush to get service IDs
@@ -196,7 +198,7 @@ def populate_fake_db(session):
 
 
 if __name__ == "__main__":
-    #drop_tables()
-    #create_tables()
+    # drop_tables()
+    # create_tables()
     session = Session()
     populate_fake_db(session)

@@ -31,6 +31,7 @@ def get_customer(db_session, customer_id: int):
     customer = db_session.query(Customer).filter(Customer.id == customer_id).first()
     return CustomerRead.model_validate(customer) if customer else None
 
+
 def get_customers(db_session, filters: Optional[List]) -> List[Customer]:
     query = db_session.query(Customer)
 
@@ -40,9 +41,15 @@ def get_customers(db_session, filters: Optional[List]) -> List[Customer]:
     customers = query.all()
     return [CustomerRead.model_validate(customer) for customer in customers]
 
+
 def get_telegram_customer(db_session, telegram_name: str):
-    customer = db_session.query(Customer).filter(Customer.telegram_name == telegram_name).first()
+    customer = (
+        db_session.query(Customer)
+        .filter(Customer.telegram_name == telegram_name)
+        .first()
+    )
     return CustomerRead.model_validate(customer) if customer else None
+
 
 def update_customer(db_session, customer_id: int, customer_data: CustomerCreate):
     customer = db_session.query(Customer).filter(Customer.id == customer_id).first()
@@ -194,7 +201,7 @@ def update_appointment(
     query = db_session.query(Appointment).filter(Appointment.id == appointment_id)
 
     if filters:
-        query_filters.extend(filters)    
+        query_filters.extend(filters)
     appointment = query.filter(*query_filters).first()
 
     if appointment:
@@ -215,7 +222,7 @@ def delete_appointment(
     query = db_session.query(Appointment)
 
     if filters:
-        query_filters.extend(filters) 
+        query_filters.extend(filters)
     appointment = query.filter(*query_filters).first()
 
     if appointment:

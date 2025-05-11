@@ -1,7 +1,6 @@
 from datetime import datetime
 from datetime import timezone
 
-from config import load_config
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Float
@@ -11,6 +10,8 @@ from sqlalchemy import String
 from sqlalchemy import Time
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
+
+from config import load_config
 
 config = load_config()
 # Initialize the base and engine
