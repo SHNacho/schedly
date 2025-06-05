@@ -4,3 +4,6 @@ config.yaml
 __pycache__
 *.ipynb
 alembic.ini
+*secret*
+token.json
+credentials.json

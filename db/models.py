@@ -31,19 +31,19 @@ class Customer(Base):
     appointments = relationship("Appointment", back_populates="customer")
 
 
-# Stylist model
-class Stylist(Base):
-    __tablename__ = "stylists"
+# Employee model
+class Employee(Base):
+    __tablename__ = "employees"
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
-    appointments = relationship("Appointment", back_populates="stylist")
-    work_schedules = relationship("WorkSchedule", back_populates="stylist")
+    appointments = relationship("Appointment", back_populates="employee")
+    work_schedules = relationship("WorkSchedule", back_populates="employee")
     services = relationship(
         "Service",
-        secondary="stylist_services",
-        back_populates="stylists",
+        secondary="employee_services",
+        back_populates="employees",
     )
 
 
@@ -57,17 +57,17 @@ class Service(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     appointments = relationship("Appointment", back_populates="service")
-    stylists = relationship(
-        "Stylist",
-        secondary="stylist_services",
+    employees = relationship(
+        "Employee",
+        secondary="employee_services",
         back_populates="services",
     )
 
 
-# Relationship between Services and Stylists
-class StylistServices(Base):
-    __tablename__ = "stylist_services"
-    stylist_id = Column(Integer, ForeignKey("stylists.id"), primary_key=True)
+# Relationship between Services and Employees
+class EmployeeServices(Base):
+    __tablename__ = "employee_services"
+    employee_id = Column(Integer, ForeignKey("employees.id"), primary_key=True)
     service_id = Column(Integer, ForeignKey("services.id"), primary_key=True)
 
 
@@ -75,13 +75,13 @@ class StylistServices(Base):
 class WorkSchedule(Base):
     __tablename__ = "work_schedules"
     id = Column(Integer, primary_key=True)
-    stylist_id = Column(Integer, ForeignKey("stylists.id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
     day_of_week = Column(Integer, nullable=False)  # 0=Monday, 1=Tuesday, etc.
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
-    stylist = relationship("Stylist", back_populates="work_schedules")
+    employee = relationship("Employee", back_populates="work_schedules")
 
 
 # Appointment model
@@ -90,10 +90,10 @@ class Appointment(Base):
     id = Column(Integer, primary_key=True)
     appointment_time = Column(DateTime, default=datetime.now(timezone.utc))
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
-    stylist_id = Column(Integer, ForeignKey("stylists.id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
     service_id = Column(Integer, ForeignKey("services.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     customer = relationship("Customer", back_populates="appointments")
-    stylist = relationship("Stylist", back_populates="appointments")
+    employee = relationship("Employee", back_populates="appointments")
     service = relationship("Service", back_populates="appointments")

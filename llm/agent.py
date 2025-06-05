@@ -16,12 +16,12 @@ from config import config
 from llm.state import AgentState
 from llm.tools import tool_available_hours
 from llm.tools import tool_delete_appointment
+from llm.tools import tool_employee_available_hours
 from llm.tools import tool_list_customer_appointments
+from llm.tools import tool_list_employees
 from llm.tools import tool_list_services
-from llm.tools import tool_list_stylists
 from llm.tools import tool_save_appointment
 from llm.tools import tool_save_customer
-from llm.tools import tool_stylist_available_hours
 from llm.tools import tool_update_appointment
 from llm.utils import print_stream
 
@@ -39,11 +39,11 @@ tools = [
     tool_available_hours,
     tool_delete_appointment,
     tool_list_services,
-    tool_list_stylists,
+    tool_list_employees,
     tool_list_customer_appointments,
     tool_save_appointment,
     tool_save_customer,
-    # tool_stylist_available_hours,
+    # tool_employee_available_hours,
     tool_update_appointment,
 ]
 # Bind tools to the model

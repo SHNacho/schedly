@@ -16,9 +16,9 @@ from db.crud import create_appointment
 from db.crud import create_customer
 from db.crud import delete_appointment
 from db.crud import get_all_appointments
+from db.crud import get_all_employees
 from db.crud import get_all_schedules
 from db.crud import get_all_services
-from db.crud import get_all_stylists
 from db.crud import get_customer
 from db.crud import get_service
 from db.crud import update_appointment
@@ -26,24 +26,23 @@ from db.models import Appointment
 from db.models import WorkSchedule
 from db.schemas import AppointmentCreate
 from db.schemas import CustomerCreate
-from llm.state import AgentState
 from llm.utils import calculate_available_intervals
 from llm.utils import calculate_unavailable_intervals
 from llm.utils import time_interval_into_slots
 
 
-def _stylist_available_hours(
+def _employee_available_hours(
     appointment_date: str,
     service_id: int,
-    stylist_id: int,
+    employee_id: int,
 ) -> str:
     """
-    Call to list all available hours for a service and a stylist in a date.
+    Call to list all available hours for a service and a employee in a date.
 
     Params:
         appointment_date (date): Appointment date in the format "%Y-%m-%d"
         service_id (int): Identifier of the service for the appointment
-        stylist_id (int): Identifier Team member the client would like
+        employee_id (int): Identifier Team member the client would like
     """
     appointment_date = datetime.strptime(appointment_date, "%Y-%m-%d")
 
@@ -56,26 +55,26 @@ def _stylist_available_hours(
     weekday = appointment_date.weekday()
 
     with Session() as session:
-        stylist_schedule = get_all_schedules(
+        employee_schedule = get_all_schedules(
             session,
             filters=[
-                WorkSchedule.stylist_id == stylist_id,
+                WorkSchedule.employee_id == employee_id,
                 WorkSchedule.day_of_week == weekday,
             ],
         )
-        stylist_appointments = get_all_appointments(
+        employee_appointments = get_all_appointments(
             session,
             filters=[
-                Appointment.stylist_id == stylist_id,
+                Appointment.employee_id == employee_id,
                 Appointment.appointment_time.cast(Date) == appointment_date.date(),
             ],
         )
 
         service_duration = get_service(session, service_id).duration_minutes
-        unavailable_intervals = calculate_unavailable_intervals(stylist_appointments)
+        unavailable_intervals = calculate_unavailable_intervals(employee_appointments)
         available_intervals = calculate_available_intervals(
             unavailable_intervals,
-            stylist_schedule,
+            employee_schedule,
         )
         free_slots = []
         for a_interval in available_intervals:
@@ -105,17 +104,17 @@ def tool_list_services() -> str:
 
 
 @tool
-def tool_list_stylists() -> str:
+def tool_list_employees() -> str:
     """
-    Call to list all stylists and information about them. Useful to get the ID of the
-    stylist to book an appointment or check its available hours.
+    Call to list all employees and information about them. Useful to get the ID of the
+    employee to book an appointment or check its available hours.
     """
     with Session() as db_session:
-        stylists = get_all_stylists(db_session)
-        str_stylists = "These are the stylists:\n"
-        for stylist in stylists:
-            str_stylists += f"- {str(stylist)}\n"
-    return str_stylists
+        employees = get_all_employees(db_session)
+        str_employees = "These are the employees:\n"
+        for employee in employees:
+            str_employees += f"- {str(employee)}\n"
+    return str_employees
 
 
 @tool
@@ -129,36 +128,40 @@ def tool_available_hours(appointment_date: str, service_id: int) -> str:
     """
     session = Session()
     # Get all available slots for the service in the date
-    stylists = get_all_stylists(session)
+    employees = get_all_employees(session)
     str_available_hours = f"Available hours for {appointment_date}:\n"
-    for stylist in stylists:
-        str_available_hours += f"{stylist.name}:\n"
-        stylist_available_hours = _stylist_available_hours(
+    for employee in employees:
+        str_available_hours += f"{employee.name}:\n"
+        employee_available_hours = _employee_available_hours(
             appointment_date,
             service_id,
-            stylist.id,
+            employee.id,
         )
-        for available_hour in stylist_available_hours:
+        for available_hour in employee_available_hours:
             str_available_hours += f"\t- {available_hour}\n"
     return str_available_hours
 
 
 @tool
-def tool_stylist_available_hours(
+def tool_employee_available_hours(
     appointment_date: str,
     service_id: int,
-    stylist_id: int,
+    employee_id: int,
 ):
     """
-    Call to list all available hours for a service and a stylist in a date.
+    Call to list all available hours for a service and a employee in a date.
 
     Params:
         appointment_date (date): Appointment date in the format "%Y-%m-%d"
         service_id (int): Identifier of the service for the appointment
-        stylist_id (int): Identifier Team member the client would like
+        employee_id (int): Identifier Team member the client would like
     """
     str_free_hours = f"Available hours for {appointment_date}:\n"
-    for free_hour in _stylist_available_hours(appointment_date, service_id, stylist_id):
+    for free_hour in _employee_available_hours(
+        appointment_date,
+        service_id,
+        employee_id,
+    ):
         str_free_hours += f"- {free_hour}\n"
     return str_free_hours
 
@@ -192,7 +195,7 @@ def tool_save_customer(
 @tool
 def tool_save_appointment(
     customer_id: Annotated[int, InjectedState("customer_id")],
-    stylist_id: int,
+    employee_id: int,
     service_id: int,
     appointment_datetime: str,
 ):
@@ -201,7 +204,7 @@ def tool_save_appointment(
 
     Params:
         customer_id (int): Identifier of the customer
-        stylist_id (int): Identifier of the stylist
+        employee_id (int): Identifier of the employee
         service_id (int): Identifier of the service
         appointment_datetime (str): Appointment date and time in the format "%Y-%m-%d %H:%M:%S"
     """
@@ -212,7 +215,7 @@ def tool_save_appointment(
             appointment = AppointmentCreate(
                 appointment_time=appointment_datetime,
                 customer_id=customer_id,
-                stylist_id=stylist_id,
+                employee_id=employee_id,
                 service_id=service_id,
             )
             create_appointment(session, appointment)
@@ -250,7 +253,7 @@ def tool_list_customer_appointments(
 def tool_update_appointment(
     appointment_id: int,
     appointment_datetime: str,
-    stylist_id: int,
+    employee_id: int,
     service_id: int,
     customer_id: Annotated[int, InjectedState("customer_id")],
 ):
@@ -260,14 +263,14 @@ def tool_update_appointment(
     Params:
         appointment_id (int): Identifier of the appointment to be updated.
         appointment_datetime (str): New appointment date and time in the format "%Y-%m-%d %H:%M:%S"
-        stylist_id (int): Identifier of the stylist assigned. Can be the same or a different stylist
+        employee_id (int): Identifier of the employee assigned. Can be the same or a different employee
         service_id (int): Identifier of the service. Can be the same or a different service
     """
     with Session() as session:
         appointment = AppointmentCreate(
             appointment_time=appointment_datetime,
             customer_id=customer_id,
-            stylist_id=stylist_id,
+            employee_id=employee_id,
             service_id=service_id,
         )
         constraints = [Appointment.customer_id == customer_id]

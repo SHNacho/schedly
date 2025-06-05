@@ -9,9 +9,9 @@ from db import Session
 from db.models import Appointment
 from db.models import Base
 from db.models import Customer
+from db.models import Employee
+from db.models import EmployeeServices
 from db.models import Service
-from db.models import Stylist
-from db.models import StylistServices
 from db.models import WorkSchedule
 
 
@@ -83,17 +83,17 @@ def populate_fake_db(session):
     session.flush()  # Flush to get customer IDs
     print("Customer table populated")
 
-    # Create fake stylists
-    stylists = [
-        Stylist(
+    # Create fake employees
+    employees = [
+        Employee(
             name=faker.name(),
             created_at=faker.date_time_this_year(),
         )
         for _ in range(5)
     ]
-    session.add_all(stylists)
-    session.flush()  # Flush to get stylist IDs
-    print("Stylists table populated")
+    session.add_all(employees)
+    session.flush()  # Flush to get employee IDs
+    print("Employees table populated")
 
     # Create fake services
     services = [
@@ -120,23 +120,28 @@ def populate_fake_db(session):
     session.flush()  # Flush to get service IDs
     print("Services table populated")
 
-    # Associate stylists with services
-    for stylist in stylists:
-        services_for_stylist = random.sample(services, random.randint(1, len(services)))
-        for service in services_for_stylist:
-            session.add(StylistServices(stylist_id=stylist.id, service_id=service.id))
+    # Associate employees with services
+    for employee in employees:
+        services_for_employee = random.sample(
+            services,
+            random.randint(1, len(services)),
+        )
+        for service in services_for_employee:
+            session.add(
+                EmployeeServices(employee_id=employee.id, service_id=service.id),
+            )
     print("StylystServices table populated")
 
-    # Create work schedules for stylists
-    for stylist in stylists:
+    # Create work schedules for employees
+    for employee in employees:
         for day_of_week in range(7):  # Create schedules for the whole week
             if random.choice(
                 [True, False],
-            ):  # Randomly decide if stylist works on this day
+            ):  # Randomly decide if employee works on this day
                 if random.choice(list(schedules.keys())) == "morning":
                     session.add(
                         WorkSchedule(
-                            stylist_id=stylist.id,
+                            employee_id=employee.id,
                             day_of_week=day_of_week,
                             start_time=random.choice(schedules["morning"]["start"]),
                             end_time=random.choice(schedules["morning"]["end"]),
@@ -146,7 +151,7 @@ def populate_fake_db(session):
                 else:
                     session.add(
                         WorkSchedule(
-                            stylist_id=stylist.id,
+                            employee_id=employee.id,
                             day_of_week=day_of_week,
                             start_time=random.choice(schedules["afternoon"]["start"]),
                             end_time=random.choice(schedules["afternoon"]["end"]),
@@ -160,12 +165,12 @@ def populate_fake_db(session):
     # Create fake appointments
     for _ in range(20):
         customer = random.choice(customers)
-        stylist = random.choice(stylists)
+        employee = random.choice(employees)
         service = random.choice(services)
         appointment_date = faker.date_this_year()
         while True:
             available_weekdays = [
-                schedule.day_of_week for schedule in stylist.work_schedules
+                schedule.day_of_week for schedule in employee.work_schedules
             ]
             try:
                 idx = available_weekdays.index(appointment_date.weekday())
@@ -176,8 +181,8 @@ def populate_fake_db(session):
             else:
                 appointment_date = faker.date_this_year(after_today=True)
         appointment_time = random_time_between(
-            stylist.work_schedules[idx].start_time,
-            stylist.work_schedules[idx].end_time,
+            employee.work_schedules[idx].start_time,
+            employee.work_schedules[idx].end_time,
         )
         appointment_datetime = datetime.combine(appointment_date, appointment_time)
 
@@ -185,7 +190,7 @@ def populate_fake_db(session):
             Appointment(
                 appointment_time=appointment_datetime,
                 customer_id=customer.id,
-                stylist_id=stylist.id,
+                employee_id=employee.id,
                 service_id=service.id,
                 created_at=faker.date_time_this_year(),
             ),

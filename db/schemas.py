@@ -25,13 +25,13 @@ class CustomerRead(CustomerCreate):
     appointments: Optional[List["AppointmentRead"]] = None
 
 
-# Stylist Pydantic model
-class StylistCreate(BaseModel):
+# Employee Pydantic model
+class EmployeeCreate(BaseModel):
     name: str
     specialty: Optional[str] = None
 
 
-class StylistRead(StylistCreate):
+class EmployeeRead(EmployeeCreate):
     model_config = ConfigDict(from_attributes=True)
     id: int
     work_schedules: Optional[List["WorkScheduleRead"]] = None
@@ -60,7 +60,7 @@ class ServiceRead(ServiceCreate):
 
 # WorkSchedule Pydantic model
 class WorkScheduleCreate(BaseModel):
-    stylist_id: int
+    employee_id: int
     day_of_week: int  # 0=Monday, 1=Tuesday, etc.
     start_time: time
     end_time: time
@@ -79,7 +79,7 @@ class WorkScheduleRead(WorkScheduleCreate):
 class AppointmentCreate(BaseModel):
     appointment_time: datetime
     customer_id: int
-    stylist_id: int
+    employee_id: int
     service_id: int
 
 
@@ -88,9 +88,9 @@ class AppointmentRead(AppointmentCreate):
     id: int
 
     # customer: Optional[CustomerRead] = None
-    # stylist: Optional[StylistRead] = None
+    # employee: Optional[EmployeeRead] = None
     service: Optional[ServiceRead] = None
 
     def __str__(self):
-        result = f"ID: {self.id}; Stylist ID: {self.stylist_id}; Service ID: {self.service}; Date and Time: {datetime.strftime(self.appointment_time, '%A, %d-%m-%Y %H:%M:%S')}"
+        result = f"ID: {self.id}; Employee ID: {self.employee_id}; Service ID: {self.service}; Date and Time: {datetime.strftime(self.appointment_time, '%A, %d-%m-%Y %H:%M:%S')}"
         return result

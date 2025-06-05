@@ -3,17 +3,17 @@ from typing import Optional
 
 from db.models import Appointment
 from db.models import Customer
+from db.models import Employee
 from db.models import Service
-from db.models import Stylist
 from db.models import WorkSchedule
 from db.schemas import AppointmentCreate
 from db.schemas import AppointmentRead
 from db.schemas import CustomerCreate
 from db.schemas import CustomerRead
+from db.schemas import EmployeeCreate
+from db.schemas import EmployeeRead
 from db.schemas import ServiceCreate
 from db.schemas import ServiceRead
-from db.schemas import StylistCreate
-from db.schemas import StylistRead
 from db.schemas import WorkScheduleCreate
 from db.schemas import WorkScheduleRead
 
@@ -69,36 +69,36 @@ def delete_customer(db_session, customer_id: int):
     return customer_id if customer else None
 
 
-# Stylist CRUD
-def create_stylist(db_session, stylist_data: StylistCreate):
-    stylist = Stylist(**stylist_data.model_dump())
-    db_session.add(stylist)
+# Employee CRUD
+def create_employee(db_session, employee_data: EmployeeCreate):
+    employee = Employee(**employee_data.model_dump())
+    db_session.add(employee)
     db_session.commit()
-    db_session.refresh(stylist)
-    return StylistRead.model_validate(stylist)
+    db_session.refresh(employee)
+    return EmployeeRead.model_validate(employee)
 
 
-def get_stylist(db_session, stylist_id: int):
-    stylist = db_session.query(Stylist).filter(Stylist.id == stylist_id).first()
-    return StylistRead.model_validate(stylist) if stylist else None
+def get_employee(db_session, employee_id: int):
+    employee = db_session.query(Employee).filter(Employee.id == employee_id).first()
+    return EmployeeRead.model_validate(employee) if employee else None
 
 
-def update_stylist(db_session, stylist_id: int, stylist_data: StylistCreate):
-    stylist = db_session.query(Stylist).filter(Stylist.id == stylist_id).first()
-    if stylist:
-        for key, value in stylist_data.model_dump(exclude_unset=True).items():
-            setattr(stylist, key, value)
+def update_employee(db_session, employee_id: int, employee_data: EmployeeCreate):
+    employee = db_session.query(Employee).filter(Employee.id == employee_id).first()
+    if employee:
+        for key, value in employee_data.model_dump(exclude_unset=True).items():
+            setattr(employee, key, value)
         db_session.commit()
-        db_session.refresh(stylist)
-    return StylistRead.model_validate(stylist) if stylist else None
+        db_session.refresh(employee)
+    return EmployeeRead.model_validate(employee) if employee else None
 
 
-def delete_stylist(db_session, stylist_id: int):
-    stylist = db_session.query(Stylist).filter(Stylist.id == stylist_id).first()
-    if stylist:
-        db_session.delete(stylist)
+def delete_employee(db_session, employee_id: int):
+    employee = db_session.query(Employee).filter(Employee.id == employee_id).first()
+    if employee:
+        db_session.delete(employee)
         db_session.commit()
-    return stylist_id if stylist else None
+    return employee_id if employee else None
 
 
 # Service CRUD
@@ -232,10 +232,10 @@ def delete_appointment(
     return appointment_id if appointment else None
 
 
-# Stylist: Get all stylists with their work schedules and appointments
-def get_all_stylists(db_session) -> List[StylistRead]:
-    stylists = db_session.query(Stylist).all()
-    return [StylistRead.model_validate(stylist) for stylist in stylists]
+# Employee: Get all employees with their work schedules and appointments
+def get_all_employees(db_session) -> List[EmployeeRead]:
+    employees = db_session.query(Employee).all()
+    return [EmployeeRead.model_validate(employee) for employee in employees]
 
 
 def get_all_services(db_session) -> List[ServiceRead]:
@@ -267,4 +267,4 @@ def get_all_schedules(db_session, filters: list = None) -> List[WorkScheduleRead
 if __name__ == "__main__":
     from db import Session
 
-    print(get_all_stylists(Session()))
+    print(get_all_employees(Session()))
