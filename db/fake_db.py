@@ -3,16 +3,23 @@ from datetime import datetime
 from datetime import time
 
 from faker import Faker
+from sqlalchemy import text
 
+from config import load_config
 from db import engine
 from db import Session
 from db.models import Appointment
 from db.models import Base
+from db.models import Business
 from db.models import Customer
 from db.models import Employee
 from db.models import EmployeeServices
 from db.models import Service
+from db.models import TelegramBot
 from db.models import WorkSchedule
+from services.google_calendar import GoogleCalendarClient
+
+config = load_config()
 
 
 def random_time_between(start_time, end_time):
@@ -20,6 +27,14 @@ def random_time_between(start_time, end_time):
     end_seconds = end_time.hour * 3600 + end_time.minute * 60
     random_seconds = random.randint(start_seconds, end_seconds)
     return time(random_seconds // 3600, (random_seconds % 3600) // 60)
+
+
+def truncate_all(session):
+    """Truncates all tenant data by clearing the business table.
+    This cascades to all related tables via ON DELETE CASCADE."""
+    session.execute(text("TRUNCATE TABLE business CASCADE;"))
+    session.commit()
+    print("All data truncated via business cascade.")
 
 
 def drop_tables():
@@ -66,12 +81,22 @@ schedules = {
 
 
 def populate_fake_db(session):
+    business = Business(
+        name="TestBusiness",
+    )
+    session.add(business)
+    session.flush()
+    session.commit()
+
+    gc_client = GoogleCalendarClient(business.id)
+
     # Initialize Faker
     faker = Faker()
 
     # Create fake customers
     customers = [
         Customer(
+            business_id=business.id,
             name=faker.name(),
             email=faker.unique.email(),
             phone=faker.unique.phone_number(),
@@ -84,13 +109,19 @@ def populate_fake_db(session):
     print("Customer table populated")
 
     # Create fake employees
-    employees = [
-        Employee(
-            name=faker.name(),
-            created_at=faker.date_time_this_year(),
+    employees = []
+    for _ in range(5):
+        name = faker.name()
+        created_at = (faker.date_time_this_year(),)
+        calendar = gc_client.create_calendar(name=f"{business.name} - {name}")
+        employees.append(
+            Employee(
+                business_id=business.id,
+                name=name,
+                created_at=created_at,
+                google_calendar_id=calendar["id"],
+            ),
         )
-        for _ in range(5)
-    ]
     session.add_all(employees)
     session.flush()  # Flush to get employee IDs
     print("Employees table populated")
@@ -98,18 +129,21 @@ def populate_fake_db(session):
     # Create fake services
     services = [
         Service(
+            business_id=business.id,
             name="nails",
             price=15,
             duration_minutes=30,
             created_at=faker.date_time_this_year(),
         ),
         Service(
+            business_id=business.id,
             name="hair cut",
             price=13.50,
             duration_minutes=30,
             created_at=faker.date_time_this_year(),
         ),
         Service(
+            business_id=business.id,
             name="hair dye",
             price=35,
             duration_minutes=60,
@@ -121,16 +155,18 @@ def populate_fake_db(session):
     print("Services table populated")
 
     # Associate employees with services
+    employee_services = []
     for employee in employees:
         services_for_employee = random.sample(
             services,
             random.randint(1, len(services)),
         )
         for service in services_for_employee:
-            session.add(
+            employee_services.append(
                 EmployeeServices(employee_id=employee.id, service_id=service.id),
             )
-    print("StylystServices table populated")
+    session.add_all(employee_services)
+    print("EmployeeServices table populated")
 
     # Create work schedules for employees
     for employee in employees:
@@ -165,8 +201,8 @@ def populate_fake_db(session):
     # Create fake appointments
     for _ in range(20):
         customer = random.choice(customers)
-        employee = random.choice(employees)
-        service = random.choice(services)
+        employee_service = random.choice(employee_services)
+        employee = employee_service.employee
         appointment_date = faker.date_this_year()
         while True:
             available_weekdays = [
@@ -190,8 +226,7 @@ def populate_fake_db(session):
             Appointment(
                 appointment_time=appointment_datetime,
                 customer_id=customer.id,
-                employee_id=employee.id,
-                service_id=service.id,
+                employee_service_id=employee_service.id,
                 created_at=faker.date_time_this_year(),
             ),
         )
@@ -201,9 +236,22 @@ def populate_fake_db(session):
     session.commit()
     print("Database populated with fake data.")
 
+    return business.id
+
 
 if __name__ == "__main__":
     # drop_tables()
     # create_tables()
-    session = Session()
-    populate_fake_db(session)
+    with Session() as session:
+        truncate_all(session)
+        business_id = populate_fake_db(session)
+        session.add(
+            TelegramBot(
+                telegram_username="@myschedly_bot",
+                token=config["telegram"]["api_key"],
+                business_id=business_id,
+            ),
+        )
+        print("TelegramBot populated")
+        session.commit()
+    gc_client = GoogleCalendarClient(business_id)

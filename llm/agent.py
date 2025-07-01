@@ -82,14 +82,14 @@ def call_model(
         "data in this order:\n"
         "1. The service.\n"
         "2. The date.\n"
-        "3. The team member the client would like.",
+        "3. The team member the client would like."
+        "When scheduling or rescheduling and appointment, always ensure that "
+        "the team member is available in the date and time of the appointment "
+        "before saving it.",
     )
 
     human_prompt = HumanMessage(
-        (
-            f"The customer ID is {state['customer_id']}.\n"
-            "You are not allowed to output any database IDs.\n"
-        ),
+        ("You are not allowed to output any database IDs."),
     )
 
     response = model.invoke([system_prompt, human_prompt] + state["messages"], config)
@@ -143,7 +143,7 @@ workflow.add_conditional_edges(
 # This means that after `tools` is called, `agent` node is called next.
 workflow.add_edge("tools", "agent")
 
-# Now we can compile and visualize our graph
+# Now we can compile
 memory = MemorySaver()
 graph = workflow.compile(checkpointer=memory)
 
