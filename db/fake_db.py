@@ -16,6 +16,7 @@ from db.models import Employee
 from db.models import EmployeeServices
 from db.models import Service
 from db.models import TelegramBot
+from db.models import WhatsappBot
 from db.models import WorkSchedule
 from services.google_calendar import GoogleCalendarClient
 
@@ -249,6 +250,13 @@ if __name__ == "__main__":
             TelegramBot(
                 telegram_username="@myschedly_bot",
                 token=config["telegram"]["api_key"],
+                business_id=business_id,
+            ),
+        )
+        session.add(
+            WhatsappBot(
+                waba_id="1433816197963990",
+                token=config["whatsapp"]["api_key"],
                 business_id=business_id,
             ),
         )

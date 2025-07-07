@@ -36,6 +36,7 @@ class CustomerCreate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     telegram_name: Optional[str] = None
+    whatsapp_id: Optional[str] = None
 
 
 class CustomerRead(CustomerCreate):

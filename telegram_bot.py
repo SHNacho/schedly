@@ -56,7 +56,10 @@ async def get_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with Session() as session:
             customers = get_all_customers(
                 session,
-                [Customer.telegram_name == user["name"]],
+                [
+                    Customer.telegram_name == user["name"],
+                    Customer.business_id == business_id,
+                ],
             )
             # If the user is not in the DB create a new one
             if not customers:
@@ -74,7 +77,7 @@ async def get_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "customer_id": context.user_data["db_user_id"],
         "channel": "telegram",
     }
-    config = {"configurable": {"thread_id": user["id"]}}
+    config = {"configurable": {"thread_id": customer_read.id}}
     output = await graph.ainvoke(inputs, stream_mode="values", config=config)
     answer = output["messages"][-1].content
     print_stream(output)

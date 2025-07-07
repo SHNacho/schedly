@@ -7,3 +7,4 @@ alembic.ini
 *secret*
 token.json
 credentials.json
+start.sh

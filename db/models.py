@@ -45,6 +45,19 @@ class TelegramBot(Base):
     )
 
 
+# WhatsApp Bot model
+class WhatsappBot(Base):
+    __tablename__ = "whatsapp_bots"
+    id = Column(Integer, primary_key=True)
+    waba_id = Column(String, unique=True, index=True)
+    token = Column(String, unique=True)
+    business_id = Column(
+        Integer,
+        ForeignKey("business.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+
 # Customer model
 class Customer(Base):
     __tablename__ = "customers"
@@ -59,6 +72,7 @@ class Customer(Base):
     phone = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     telegram_name = Column(String, nullable=True, index=True)
+    whatsapp_id = Column(String, nullable=True, index=True)
 
     appointments = relationship("Appointment", back_populates="customer")
 
