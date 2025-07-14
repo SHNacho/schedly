@@ -40,6 +40,7 @@ supervisor = create_supervisor(
         "- You must provide the appropriate internal IDs (e.g. employee ID, service ID) to the sub-agents. These IDs must NEVER be exposed to the user.\n"
         "- Users CANNOT provide IDs directly. If any required ID is missing or unknown, call the Informative Agent to retrieve it, using only names or natural language provided by the user.\n"
         "- If the user wants to reschedule an appointment, you must first ask the Informative Agent for a list of their appointments.\n"
+        "- Always confirm the data with the user before scheduling, rescheduling or canceling.\n"
         "- You may rewrite or structure the user’s request to make it easier for the sub-agent to process.\n"
         "- If the user’s request spans multiple intents, break it down and delegate each intent to the appropriate agent in order.\n"
         "- If any sub-agent returns an error, report the error to the user and do NOT proceed with other agent calls.\n"
