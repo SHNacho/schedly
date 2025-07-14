@@ -44,6 +44,12 @@ class CustomerRead(CustomerCreate):
     id: int
     appointments: Optional[List["AppointmentRead"]] = None
 
+    def __str__(self):
+        result = (
+            f"Name: {self.name}\n" f"Phone: {self.phone}\n" f"Email: {self.email}\n"
+        )
+        return result
+
 
 # Employee Pydantic model
 class EmployeeCreate(BaseModel):
@@ -57,9 +63,13 @@ class EmployeeRead(EmployeeCreate):
     google_calendar_id: Optional[str]
     work_schedules: Optional[List["WorkScheduleRead"]] = None
     appointments: Optional[List["AppointmentRead"]] = None
+    services: Optional[List["ServiceRead"]] = None
 
     def __str__(self):
-        result = f"ID: {self.id}; Name: {self.name}"
+        services = ",".join(
+            [f"{service.name} (ID {service.id})" for service in self.services],
+        )
+        result = f"ID: {self.id}; Name: {self.name}; Services: {services}"
         return result
 
 

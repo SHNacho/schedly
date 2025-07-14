@@ -25,6 +25,7 @@ from db.crud import get_customer
 from db.crud import get_employee
 from db.crud import get_service
 from db.crud import update_appointment
+from db.crud import update_customer
 from db.models import Appointment
 from db.models import Employee
 from db.models import WorkSchedule
@@ -40,7 +41,7 @@ def _employee_available_hours(
     appointment_date: str,
     service_id: int,
     employee_id: int,
-) -> str:
+) -> list[str] | str:
     """
     Call to list all available hours for a service and a employee in a date.
 
@@ -49,8 +50,10 @@ def _employee_available_hours(
         service_id (int): Identifier of the service for the appointment
         employee_id (int): Identifier Team member the client would like
     """
+    free_slots = []  # Default: No slots
     appointment_date = datetime.strptime(appointment_date, "%Y-%m-%d")
 
+    # Make sure the date is in the future
     if appointment_date < datetime.now():
         return (
             f"The date {appointment_date} is on the past. If the user did not "
@@ -58,38 +61,43 @@ def _employee_available_hours(
         )
 
     weekday = appointment_date.weekday()
-
     with Session() as session:
-        employee_schedule = get_all_schedules(
-            session,
-            filters=[
-                WorkSchedule.employee_id == employee_id,
-                WorkSchedule.day_of_week == weekday,
-            ],
-        )
-        employee_appointments = get_all_appointments(
-            session,
-            filters=[
-                Employee.id == employee_id,
-                Appointment.appointment_time.cast(Date) == appointment_date.date(),
-            ],
-        )
-
-        service_duration = get_service(session, service_id).duration_minutes
-        unavailable_intervals = calculate_unavailable_intervals(employee_appointments)
-        available_intervals = calculate_available_intervals(
-            unavailable_intervals,
-            employee_schedule,
-        )
-        free_slots = []
-        for a_interval in available_intervals:
-            free_slots.extend(
-                time_interval_into_slots(
-                    a_interval[0],
-                    a_interval[1],
-                    service_duration,
-                ),
+        employee = get_employee(session, employee_id)
+        # Check if the employee offer this service
+        if service_id in [service.id for service in employee.services]:
+            # Retrieve necessary data to calculate free slots
+            employee_schedule = get_all_schedules(
+                session,
+                filters=[
+                    WorkSchedule.employee_id == employee_id,
+                    WorkSchedule.day_of_week == weekday,
+                ],
             )
+            employee_appointments = get_all_appointments(
+                session,
+                filters=[
+                    Employee.id == employee_id,
+                    Appointment.appointment_time.cast(Date) == appointment_date.date(),
+                ],
+            )
+            service_duration = get_service(session, service_id).duration_minutes
+
+            # Free slots calculation
+            unavailable_intervals = calculate_unavailable_intervals(
+                employee_appointments,
+            )
+            available_intervals = calculate_available_intervals(
+                unavailable_intervals,
+                employee_schedule,
+            )
+            for a_interval in available_intervals:
+                free_slots.extend(
+                    time_interval_into_slots(
+                        a_interval[0],
+                        a_interval[1],
+                        service_duration,
+                    ),
+                )
 
         return free_slots
 
@@ -125,9 +133,10 @@ def tool_list_employees() -> str:
 
 
 @tool
-def tool_available_hours(appointment_date: str, service_id: int) -> str:
+def tool_available_slots(appointment_date: str, service_id: int) -> str:
     """
-    Call to list all available hours for a service in a date when no employee is given.
+    Call to list all available slots for a service in a date when no employee is given.
+    If the employee is given, use the tool_employee_available_hours
 
     Params:
         appointment_date (date): Appointment date in the format "%Y-%m-%d"
@@ -137,27 +146,34 @@ def tool_available_hours(appointment_date: str, service_id: int) -> str:
     session = Session()
     # Get all available slots for the service in the date
     employees = get_all_employees(session)
-    str_available_hours = f"Available hours for {appointment_date}:\n"
+    response = f"Available hours for {appointment_date}:\n"
     for employee in employees:
-        str_available_hours += f"{employee.name}:\n"
-        employee_available_hours = _employee_available_hours(
+        response += f"{employee.name} (ID {employee.id}):\n"
+        slots = _employee_available_hours(
             appointment_date,
             service_id,
             employee.id,
         )
-        for available_hour in employee_available_hours:
-            str_available_hours += f"\t- {available_hour}\n"
-    return str_available_hours
+        if isinstance(slots, str):
+            return slots
+        else:
+            if slots:
+                for available_hour in slots:
+                    response += f"\t- {available_hour}\n"
+            else:
+                response += "Unavailable\n"
+    return response
 
 
 @tool
-def tool_employee_available_hours(
+def tool_employee_available_slots(
     appointment_date: str,
     service_id: int,
     employee_id: int,
 ):
     """
     Call to list all available hours for a service in a date, given an employee.
+    If there is no employee given, use the tool_available_hours
 
     Params:
         appointment_date (date): Appointment date in the format "%Y-%m-%d"
@@ -165,14 +181,23 @@ def tool_employee_available_hours(
         employee_id (int): Identifier of the team member the client would like
     """
     print("Tool - Employee Available hours")
-    str_free_hours = f"Available hours for {appointment_date}:\n"
-    for free_hour in _employee_available_hours(
+    response = (
+        f"Available hours for {appointment_date} (with employee ID {employee_id}):\n"
+    )
+    slots = _employee_available_hours(
         appointment_date,
         service_id,
         employee_id,
-    ):
-        str_free_hours += f"- {free_hour}\n"
-    return str_free_hours
+    )
+    if isinstance(slots, str):
+        return slots
+    else:
+        if slots:
+            for slot in slots:
+                response += f"- {slot}"
+        else:
+            response += "Unavailable"
+    return response
 
 
 @tool
@@ -202,21 +227,96 @@ def tool_save_customer(
 
 
 @tool
-def tool_list_customer_appointments(
+def tool_customer_data(
     customer_id: Annotated[int, InjectedState("customer_id")],
 ):
     """
-    Call to list all appointments for the customer.
+    Call to get the customer's data stored in the database.
+    """
+
+    msg = ""
+
+    try:
+        with Session() as session:
+            customer_read = get_customer(session, customer_id)
+            msg = str(customer_read)
+
+    except Exception as e:
+        print(f"Error in tool 'customer_data': {e}")
+        msg = "There was an error while retrieving the customer data"
+
+    return msg
+
+
+@tool
+def tool_update_customer_data(
+    customer_id: Annotated[int, InjectedState("customer_id")],
+    name: Optional[str] = None,
+    email: Optional[str] = None,
+    phone: Optional[str] = None,
+):
+    """
+    Call to update the customer data. Usefult to save the customer's name, email or phone number.
+
+    Params:
+        name (str): Optional. Customer's name
+        email (str): Optional. Customer's email
+        phone (str): Optional. Customer's phone number
+    """
+
+    msg = ""
+
+    try:
+        with Session() as session:
+            customer_read = get_customer(session, customer_id)
+            customer_create = CustomerCreate(
+                business_id=customer_read.business_id,
+                name=name if name is not None else customer_read.name,
+                email=email if email is not None else customer_read.email,
+                phone=phone if phone is not None else customer_read.phone,
+            )
+            update_customer(
+                session,
+                customer_id,
+                customer_create,
+            )
+            msg = "Customer's data updated successfully"
+
+    except Exception as e:
+        print(f"Error in tool 'update_customer': {e}")
+        msg = "There was an error while updating the customer's data"
+
+    return msg
+
+
+@tool
+def tool_list_customer_appointments(
+    customer_id: Annotated[int, InjectedState("customer_id")],
+    period: str = "upcoming",
+):
+    """
+    List the appointments that customer have already scheduled. Do not use to check the availability.
+
+    Params:
+        period (str): if "upcoming" only retrieve upcoming appointments. Otherwise retrieva all the customer appointments.
     """
     print("Tool - List appointments")
     with Session() as session:
-        appointments = get_all_appointments(
-            session,
-            filters=[
-                Appointment.customer_id == customer_id,
-                Appointment.appointment_time >= datetime.now(),
-            ],
-        )
+        if period == "upcoming":
+            appointments = get_all_appointments(
+                session,
+                filters=[
+                    Appointment.customer_id == customer_id,
+                    Appointment.appointment_time >= datetime.now(),
+                ],
+            )
+        else:
+            appointments = get_all_appointments(
+                session,
+                filters=[
+                    Appointment.customer_id == customer_id,
+                ],
+            )
         str_appointments = "These are your appointments:\n"
         for appointment in appointments:
             str_appointments += f"- {str(appointment)}\n"
@@ -264,12 +364,12 @@ def tool_save_appointment(
                     # Create event in Google Calendar
                     gc_event = gc_client.add_event(
                         calendar_id=employee.google_calendar_id,
-                        summary=customer.name,
+                        summary=f"{service.name} - {customer.name}",
                         start_time=appointment_datetime,
                         end_time=end_time,
-                        description=f"{service.name} - {service.price} EUR",
+                        description=f"Price: {service.price} EUR",
                     )
-                    gc_event_id = gc_event.id
+                    gc_event_id = gc_event["id"]
 
                 except Exception as e:
                     print(f"Error in Tool 'save_appointment': {e}")
@@ -360,7 +460,7 @@ def tool_update_appointment(
                 end_time=end_time,
                 description=f"{service.name} - {service.price} EUR",
             )
-            gc_new_event_id = gc_new_event.id
+            gc_new_event_id = gc_new_event["id"]
 
         # Update in DB
         try:
@@ -414,7 +514,7 @@ def tool_delete_appointment(
             delete_appointment(session, appointment_id, constraints)
 
             if appointment.google_calendar_id:
-                employee = get_employee(session, appointment.employee_id)
+                employee = get_employee(session, appointment.employee.id)
                 gc_client = GoogleCalendarClient(employee.business_id)
                 gc_client.delete_event(
                     employee.google_calendar_id,
@@ -430,4 +530,4 @@ def tool_delete_appointment(
 
 
 if __name__ == "__main__":
-    print(_employee_available_hours("2025-06-11", 36, 56))
+    print(tool_list_customer_appointments(customer_id=12))

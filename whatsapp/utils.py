@@ -10,7 +10,7 @@ from db.crud import get_all_customers
 from db.models import Customer
 from db.models import WhatsappBot
 from db.schemas import CustomerCreate
-from llm.agent import graph
+from llm.agents.supervisor import supervisor
 from llm.utils import print_stream
 
 WHATSAPP_TOKEN = config["whatsapp"]["api_key"]
@@ -48,15 +48,18 @@ async def get_answer(waba_id, user_id, input):
         else:
             customer_read = customers[0]
 
+    # Create input
     inputs = {
         "messages": [("user", input)],
         "customer_id": customer_read.id,
         "channel": "whatsapp",
     }
-
     config = {"configurable": {"thread_id": customer_read.id}}
-    output = await graph.ainvoke(inputs, stream_mode="values", config=config)
+
+    # Get answer
+    output = await supervisor.ainvoke(inputs, stream_mode="values", config=config)
     answer = output["messages"][-1].content
+
     print_stream(output)
     return answer
 

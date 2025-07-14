@@ -12,11 +12,10 @@ from config import config
 from db import Session
 from db.crud import create_customer
 from db.crud import get_all_customers
-from db.models import Business
 from db.models import Customer
 from db.models import TelegramBot
 from db.schemas import CustomerCreate
-from llm.agent import graph
+from llm.agents.supervisor import supervisor
 from llm.utils import print_stream
 
 logging.basicConfig(
@@ -30,7 +29,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         text=(
             "Hello! I'm the Instant Beauty assistant! I can help you "
-            "with information about our services or scheduling, re-scheduling, canceling "
+            "with information about our services, scheduling, re-scheduling, canceling "
             "or listing your appointments.\n\n"
             "Let me know what do you need."
         ),
@@ -77,14 +76,21 @@ async def get_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "customer_id": context.user_data["db_user_id"],
         "channel": "telegram",
     }
-    config = {"configurable": {"thread_id": customer_read.id}}
-    output = await graph.ainvoke(inputs, stream_mode="values", config=config)
-    answer = output["messages"][-1].content
-    print_stream(output)
+    config = {"configurable": {"thread_id": context.user_data["db_user_id"]}}
+
+    try:
+        output = await supervisor.ainvoke(inputs, stream_mode="values", config=config)
+        answer = output["messages"][-1].content
+        print_stream(output)
+
+    except Exception as e:
+        answer = "Sorry there was an error in our system. Try it again later"
+        print(f"Error processing the request: {e}")
+
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=answer,
-        parse_mode=telegram.constants.ParseMode.MARKDOWN_V2,
+        # parse_mode=telegram.constants.ParseMode.MARKDOWN_V2,
     )
 
 

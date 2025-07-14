@@ -94,6 +94,12 @@ class Employee(Base):
     work_schedules = relationship("WorkSchedule", back_populates="employee")
     employee_services = relationship("EmployeeServices", back_populates="employee")
 
+    services = relationship(
+        "Service",
+        secondary="employee_services",
+        back_populates="employees",
+    )
+
 
 # Service model
 class Service(Base):
@@ -112,6 +118,13 @@ class Service(Base):
     employee_services = relationship(
         "EmployeeServices",
         back_populates="service",
+    )
+
+    # Add this relationship for direct access to employees
+    employees = relationship(
+        "Employee",
+        secondary="employee_services",
+        back_populates="services",
     )
 
 
