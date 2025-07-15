@@ -1,7 +1,6 @@
 from datetime import datetime
 from datetime import timezone
 
-from sqlalchemy import BigInteger
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Float
@@ -92,13 +91,13 @@ class Employee(Base):
 
     business = relationship("Business", back_populates="employees")
     work_schedules = relationship("WorkSchedule", back_populates="employee")
-    employee_services = relationship("EmployeeServices", back_populates="employee")
-
     services = relationship(
         "Service",
         secondary="employee_services",
         back_populates="employees",
     )
+
+    # employee_services = relationship("EmployeeServices", back_populates="employee")
 
 
 # Service model
@@ -115,17 +114,15 @@ class Service(Base):
     duration_minutes = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
-    employee_services = relationship(
-        "EmployeeServices",
-        back_populates="service",
-    )
-
-    # Add this relationship for direct access to employees
     employees = relationship(
         "Employee",
         secondary="employee_services",
         back_populates="services",
     )
+    # employee_services = relationship(
+    #    "EmployeeServices",
+    #    back_populates="service",
+    # )
 
 
 # Relationship between Services and Employees
@@ -143,8 +140,8 @@ class EmployeeServices(Base):
         nullable=False,
     )
 
-    employee = relationship("Employee", back_populates="employee_services")
-    service = relationship("Service", back_populates="employee_services")
+    employee = relationship("Employee", viewonly=True)
+    service = relationship("Service", viewonly=True)
 
 
 # WorkSchedule model
