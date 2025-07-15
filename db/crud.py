@@ -346,9 +346,3 @@ def delete_appointment(
         db_session.rollback()
         print(f"Error in delete_appointment: {e}")
         raise
-
-
-if __name__ == "__main__":
-    from db import Session
-
-    print(get_all_employees(Session()))

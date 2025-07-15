@@ -3,13 +3,8 @@ from datetime import timedelta
 from typing import Annotated
 from typing import Optional
 
-from langchain_core.messages import AIMessage
-from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
-from langgraph.graph.state import BaseStore
 from langgraph.prebuilt import InjectedState
-from langgraph.prebuilt import InjectedStore
-from langgraph.prebuilt import ToolNode
 from sqlalchemy import Date
 
 from db import Session
@@ -136,7 +131,7 @@ def tool_list_employees() -> str:
 def tool_available_slots(appointment_date: str, service_id: int) -> str:
     """
     Call to list all available slots for a service in a date when no employee is given.
-    If the employee is given, use the tool_employee_available_hours
+    If the employee is given, use the tool_employee_available_slots
 
     Params:
         appointment_date (date): Appointment date in the format "%Y-%m-%d"
@@ -173,7 +168,7 @@ def tool_employee_available_slots(
 ):
     """
     Call to list all available hours for a service in a date, given an employee.
-    If there is no employee given, use the tool_available_hours
+    If there is no employee given, use the tool_available_slots
 
     Params:
         appointment_date (date): Appointment date in the format "%Y-%m-%d"
@@ -194,7 +189,7 @@ def tool_employee_available_slots(
     else:
         if slots:
             for slot in slots:
-                response += f"- {slot}"
+                response += f"- {slot}\n"
         else:
             response += "Unavailable"
     return response
@@ -530,4 +525,4 @@ def tool_delete_appointment(
 
 
 if __name__ == "__main__":
-    print(tool_list_customer_appointments(customer_id=12))
+    print(_employee_available_hours("2025-07-17", 2, 4))

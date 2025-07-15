@@ -189,15 +189,3 @@ class GoogleCalendarClient:
         except HttpError as error:
             print(f"An error occurred while updating the event: {error}")
             return None
-
-
-if __name__ == "__main__":
-    client = GoogleCalendarClient(4)
-    event = client.add_event(
-        calendar_id="0339e0c9a6033dd84e088c303c75ed5a8b12cc99712958f36aeea6b5bdbe3fe0@group.calendar.google.com",
-        summary="Test",
-        start_time="2025-06-09T10:00:00",
-        end_time="2025-06-09T11:00:00",
-        description="Test",
-    )
-    print(event)

@@ -1,13 +1,11 @@
 from datetime import datetime
 from datetime import time
-from typing import Any
 from typing import List
 from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import EmailStr
-from pydantic import Json
 
 from db.enum import Weekday
 
